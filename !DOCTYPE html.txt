@@ -1,0 +1,545 @@
+><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tastella | Explore Flavor</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  background: #fffaf3;
+  color: #30251f;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 8%;
+  background: white;
+  box-shadow: 0 2px 12px #00000010;
+}
+
+.logo {
+  font-size: 27px;
+  font-weight: bold;
+  color: #d95d27;
+}
+
+.logo span {
+  color: #46342a;
+}
+
+header p {
+  color: #76685f;
+  font-size: 14px;
+}
+
+.hero {
+  text-align: center;
+  padding: 65px 20px 35px;
+}
+
+.hero h1 {
+  font-size: 42px;
+  margin-bottom: 15px;
+}
+
+.hero h1 span {
+  color: #d95d27;
+}
+
+.hero p {
+  color: #76685f;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 850px;
+  margin: 20px auto 60px;
+  padding: 30px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 8px 35px #5a321010;
+}
+
+label {
+  display: block;
+  font-weight: bold;
+  margin: 18px 0 9px;
+}
+
+input, select {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #e5d9cf;
+  border-radius: 10px;
+  font-size: 15px;
+  background: white;
+}
+
+.voice-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+button {
+  border: none;
+  border-radius: 10px;
+  padding: 14px 20px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: bold;
+}
+
+.voice-btn {
+  background: #fff0e6;
+  color: #c45120;
+  white-space: nowrap;
+}
+
+.search-btn {
+  width: 100%;
+  margin-top: 25px;
+  background: #d95d27;
+  color: white;
+  font-size: 17px;
+}
+
+button:hover {
+  opacity: 0.88;
+}
+
+#status {
+  margin-top: 10px;
+  color: #8b6652;
+  font-size: 13px;
+}
+
+#results {
+  margin-top: 35px;
+}
+
+.result-heading {
+  margin-bottom: 18px;
+}
+
+.restaurant {
+  border: 1px solid #eee1d7;
+  padding: 20px;
+  border-radius: 14px;
+  margin-bottom: 14px;
+  background: #fffdfa;
+}
+
+.restaurant h3 {
+  margin-bottom: 9px;
+  color: #453027;
+}
+
+.restaurant p {
+  color: #76685f;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.tag {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 7px 11px;
+  border-radius: 20px;
+  background: #fff0e6;
+  color: #bd5122;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+footer {
+  text-align: center;
+  padding: 25px;
+  color: #8b7b70;
+  font-size: 13px;
+}
+
+@media(max-width:600px) {
+  .hero h1 { font-size: 31px; }
+  .container { margin: 15px; padding: 22px; }
+  .voice-row { flex-direction: column; }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">Tastella<span>.</span></div>
+  <p>Your Smart Food Discovery Companion</p>
+</header>
+
+<section class="hero">
+  <h1>Explore Flavor, <span>Find Your Perfect Match.</span></h1>
+  <p>Tell us what you're craving. Tastella helps you discover<br>
+  food options that match your taste and budget.</p>
+</section>
+
+<main class="container">
+
+  <label for="language">Choose your language</label>
+  <select id="language">
+    <option value="en-IN">English</option>
+    <option value="ta-IN">Tamil</option>
+    <option value="hi-IN">Hindi</option>
+  </select>
+
+  <div class="input-group">
+  <label for="craving">Tell Tastella what you want</label>
+  <textarea id="craving"
+    placeholder="Speak your food craving, city, budget per person, number of people and ambience..."
+    rows="3"></textarea>
+</div>
+<button type="button" onclick="startVoice()">
+  🎙 Speak your preferences
+</button>
+<button type="button" onclick="stopVoice()">
+  Stop Speaking
+</button>
+<p id="status"></p>
+  <button class="search-btn" onclick="findFood()">Find My Food Match →</button>
+  <section id="results"></section>
+
+</main>
+
+<footer>
+  Tastella – Explore Flavor, Find Your Perfect Match.<br>
+  Prototype demonstration. Restaurant listings and prices are sample data.
+</footer>
+
+<script>
+
+
+let recognition;
+
+function startVoice() {
+  const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    document.getElementById("status").textContent =
+      "Please use Google Chrome for voice input.";
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+
+  recognition.lang = document.getElementById("language").value;
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  document.getElementById("craving").value = "";
+  document.getElementById("status").textContent =
+    "🎙 Listening... Speak your complete request.";
+
+  recognition.onresult = function(event) {
+    let completeText = "";
+
+    for (let i = 0; i < event.results.length; i++) {
+      completeText += event.results[i][0].transcript + " ";
+    }
+
+    document.getElementById("craving").value =
+      completeText.trim();
+
+    document.getElementById("status").textContent =
+      "Listening: " + completeText;
+  };
+
+  recognition.onerror = function(event) {
+    document.getElementById("status").textContent =
+      "Microphone error: " + event.error;
+  };
+
+  recognition.onend = function() {
+    document.getElementById("status").textContent =
+      "Voice input captured. Press Find My Food.";
+  };
+
+  try {
+    recognition.start();
+  } catch (error) {
+    document.getElementById("status").textContent =
+      "Microphone is already listening. Try again.";
+  }
+}
+
+function stopVoice() {
+  if (recognition) {
+    recognition.stop();
+  }
+}
+
+
+
+
+
+function findFood() {
+  const request = document.getElementById("craving").value.trim();
+  const language = document.getElementById("language").value;
+
+  if (!request) {
+    alert("Please speak or enter your preferences.");
+    return;
+  }
+
+  const text = request.toLowerCase();
+
+  
+  // Detect food (English + Tamil)
+  const food = 
+    /சிக்கன் பிரியாணி|chicken biryani|biryani|பிரியாணி/i.test(text)
+      ? "Chicken Biryani"
+      : /தோசை|dosa/i.test(text)
+      ? "Dosa"
+      : /இட்லி|idli/i.test(text)
+      ? "Idli"
+      : /பீட்சா|pizza/i.test(text)
+      ? "Pizza"
+      : /பரோட்டா|parotta/i.test(text)
+      ? "Parotta"
+      : "Not recognised";
+
+  // Detect city and area
+  const city =
+    /சென்னை|சென்னையில|சென்னைல|chennai/i.test(text)
+      ? "Chennai"
+      : /கோயம்புத்தூர்|கோவை|coimbatore/i.test(text)
+      ? "Coimbatore"
+      : /மதுரை|madurai/i.test(text)
+      ? "Madurai"
+      : /திருச்சி|trichy/i.test(text)
+      ? "Trichy"
+      : "Not recognised";
+
+  const area =
+    /டி நகர்|திநகர்|t nagar|tnagar/i.test(text)
+      ? "T Nagar"
+      : "";
+
+
+  // Detect number of people (English + Tamil)
+
+  const peopleMatch = text.match(
+    /(\d+)\s*(?:people|persons|members|பேர்|பேருக்கு)/i
+  );
+
+  const englishNumbers = {
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10
+  };
+
+  const tamilNumbers = {
+    "ஒரு": 1,
+    "இரண்டு": 2,
+    "மூன்று": 3,
+    "நான்கு": 4,
+    "ஐந்து": 5,
+    "ஆறு": 6,
+    "ஏழு": 7,
+    "எட்டு": 8,
+    "ஒன்பது": 9,
+    "பத்து": 10
+  };
+
+  let people = peopleMatch
+    ? Number(peopleMatch[1])
+    : "Not recognised";
+
+  if (people === "Not recognised") {
+    for (const [word, number] of Object.entries(englishNumbers)) {
+      const pattern = new RegExp(
+        "\\b" + word + "\\s+(?:people|persons|members)\\b",
+        "i"
+      );
+
+      if (pattern.test(text)) {
+        people = number;
+        break;
+      }
+    }
+  }
+
+  if (people === "Not recognised") {
+    for (const [word, number] of Object.entries(tamilNumbers)) {
+      if (
+        text.includes(word + " பேர்") ||
+        text.includes(word + " பேருக்கு")
+      ) {
+        people = number;
+        break;
+      }
+    }
+  }
+
+
+  
+  
+  // Detect budget per person (English + Tamil)
+
+  let budget = "Not recognised";
+
+  const budgetPatterns = [
+    /(?:per\s+(?:member|person|head|individual))\s*(?:is\s*)?(?:rs\.?|rupees|₹)?\s*(\d+)/i,
+    /(?:ஆளுக்கு|ஒருவருக்கு|ஒருத்தருக்கு)\s*(?:ஒரு\s*)?(\d+)\s*(?:ரூபா|ரூபாய்)?/i,
+    /(?:rs\.?|rupees|₹)\s*(\d+)/i,
+    /(?:budget|under|below)\s*₹?\s*(\d+)/i,
+    /(\d+)\s*(?:ரூபா|ரூபாய்|rupees|rs)/i
+  ];
+
+  for (const pattern of budgetPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      budget = Number(match[1]);
+      break;
+    }
+  }
+
+  if (budget === "Not recognised") {
+    if (/நூறு/.test(text)) budget = 100;
+    else if (/இருநூறு/.test(text)) budget = 200;
+    else if (/முந்நூறு|முன்னூறு/.test(text)) budget = 300;
+    else if (/ஐம்பது/.test(text)) budget = 50;
+  }
+
+
+
+  // Detect ambience
+  const ambience =
+    /ஃபேமிலி|குடும்ப|family/i.test(text)
+      ? "Family-friendly"
+      : /அமைதியான|quiet/i.test(text)
+      ? "Quiet"
+      : /outdoor/i.test(text)
+      ? "Outdoor"
+      : "Not recognised";
+
+  
+
+  
+  const mapQuery1 =
+    (food !== "Not recognised" ? food : "restaurants") +
+    " restaurants in " +
+    (city !== "Not recognised" ? city : "India") +
+    (ambience !== "Not recognised" ? " " + ambience : "") +
+    " highly rated";
+
+  const mapQuery2 =
+    (food !== "Not recognised" ? food : "restaurants") +
+    " restaurants in " +
+    (city !== "Not recognised" ? city : "India") +
+    (budget !== "Not recognised" ? " budget " + budget + " rupees per person" : " affordable");
+
+  const mapUrl1 =
+    "https://www.google.com/maps/search/?api=1&query=" +
+    encodeURIComponent(mapQuery1);
+
+  const mapUrl2 =
+    "https://www.google.com/maps/search/?api=1&query=" +
+    encodeURIComponent(mapQuery2);
+
+  const safeRequest = request.replace(/[&<>"']/g, function(char) {
+    return {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[char];
+  });
+
+  document.getElementById("results").innerHTML = `
+    <div class="restaurant">
+      <h2>Your Tastella Preferences</h2>
+      <p><b>Food:</b> ${food}</p>
+      <p><b>City:</b> ${city}</p>
+      <p><b>People:</b> ${people}</p>
+      <p><b>Budget per person:</b> ${budget === "Not recognised" ? budget : "₹" + budget}</p>
+      <p><b>Ambience:</b> ${ambience}</p>
+      <p><b>Your spoken request:</b> ${safeRequest}</p>
+    </div>
+
+    <div class="restaurant">
+      <h2>Your Top 2 Searches</h2>
+
+      <div class="recommendation">
+        <h3>1. Highly Rated Matches</h3>
+        <p>Explore restaurants matching your food and location preferences.</p>
+        <a href="${mapUrl1}" target="_blank" rel="noopener">
+          Explore Recommendation 1
+        </a>
+      </div>
+
+      <div class="recommendation">
+        <h3>2. Budget-Friendly Matches</h3>
+        <p>Explore restaurants matching your food and budget preferences.</p>
+        <a href="${mapUrl2}" target="_blank" rel="noopener">
+          Explore Recommendation 2
+        </a>
+      </div>
+
+      <p><small>Restaurant details, prices and ambience should be verified on Maps.</small></p>
+    </div>
+  `;
+
+
+  const message = language === "ta-IN"
+    ? `உங்கள் உணவு விருப்பம் ${food}. உங்கள் பட்ஜெட் ${budget} ரூபாய்.`
+    : language === "hi-IN"
+    ? `आपका पसंदीदा खाना ${food} है। आपका बजट ${budget} रुपये है।`
+    : `Your food choice is ${food}. Your budget is ${budget} rupees.`;
+
+  speakResponse(message);
+}
+
+
+
+
+function speakResponse(message) {
+  if (!("speechSynthesis" in window)) {
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+
+  const language =
+    document.getElementById("language").value;
+
+  const speech = new SpeechSynthesisUtterance(message);
+
+  speech.lang = language;
+  speech.rate = 0.85;
+
+  window.speechSynthesis.speak(speech);
+}
+
+
+
+</script>
+
+</body>
+</html>
